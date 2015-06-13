@@ -14,7 +14,7 @@ cookie_timeout = timedelta(minutes=5)
 http_headers = {'Content-Type' : 'application/x-www-form-urlencoded'}
 
 app = Flask(__name__)
-app.debug = True
+#app.debug = True
 
 
 def generate_new_cookie_and_login():
@@ -25,12 +25,10 @@ def generate_new_cookie_and_login():
 
     cookie_dict = dict(AIROS_SESSIONID=cookie_id)
 
-    print "dict: " + str(cookie_dict)
+    #print "dict: " + str(cookie_dict)
 
     login_string = 'username=' + devices.login_user + '&password=' + devices.login_password
     r = requests.post('http://' + devices.device_ip_address + '/login.cgi', data=login_string, cookies=cookie_dict, headers=http_headers)
-
-    print "login content: " + r.content
 
     return cookie_dict
 
@@ -48,7 +46,7 @@ def get_cookie_dict():
 
             timedelta = datetime.now() - datetime.fromtimestamp(int(timestamp))
 
-            print "timedelta: " + str(timedelta)
+            #print "timedelta: " + str(timedelta)
             if timedelta > cookie_timeout:
                 # the cookie is too old, login again
                 return generate_new_cookie_and_login()
@@ -65,7 +63,7 @@ def get_sensor_data():
     r = requests.get('http://' + devices.device_ip_address + '/sensors', cookies=cookies)
     response_json = r.json()
 
-    print "status: " + response_json['status']
+    #print "status: " + response_json['status']
 
     return response_json['sensors']
 
@@ -79,7 +77,6 @@ def get_power_usage():
     for s in response_json:
         res_list.append(dict(port_id=s['port'], power=round(s['state']['power'], 2)))
 
-
     return json.dumps(res_list)
 
 
@@ -92,13 +89,10 @@ def set_sensor_state(id, state):
     return "", r.status_code
 
 
-
-
-
 @app.route('/')
 def hello_world():
     return render_template('index.html', sensors=get_sensor_data())
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')
