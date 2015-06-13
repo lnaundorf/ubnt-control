@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template
 import requests
 import devices
 from random import choice
@@ -10,8 +10,8 @@ import json
 
 cookie_length = 32
 cookie_id_filename = 'cookie.txt'
-cookie_timeout = timedelta(minutes=5)
-http_headers = {'Content-Type' : 'application/x-www-form-urlencoded'}
+cookie_timeout = timedelta(hours=1)
+http_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 
 app = Flask(__name__)
 app.debug = True
@@ -19,6 +19,7 @@ app.debug = True
 
 def generate_new_cookie_and_login():
     f = open(cookie_id_filename, 'w')
+    # generate random 32-digit cookie id and write it with a timestamp to a file
     cookie_id = ''.join(choice(string.digits) for i in range(cookie_length))
     f.write(cookie_id + ' ' + str(int(time.mktime(datetime.now().timetuple()))))
     f.close()
@@ -44,27 +45,41 @@ def get_cookie_dict():
             cookie_id = parts[0]
             timestamp = parts[1]
 
-            timedelta = datetime.now() - datetime.fromtimestamp(int(timestamp))
+            delta = datetime.now() - datetime.fromtimestamp(int(timestamp))
 
             #print "timedelta: " + str(timedelta)
-            if timedelta > cookie_timeout:
-                # the cookie is too old, login again
-                return generate_new_cookie_and_login()
-            else:
+            if delta <= cookie_timeout:
+                # the cookie is not too old
                 return dict(AIROS_SESSIONID=cookie_id)
-        else:
-            return generate_new_cookie_and_login()
+
+    return generate_new_cookie_and_login()
+
+
+def req(method, url, data=None, cookies=None):
+    r = None
+    if method == "GET":
+        r = requests.get(url, data=data, cookies=cookies)
+    elif method == "POST":
+        r = requests.post(url, data=data, cookies=cookies)
+    elif method == "PUT":
+        r = requests.put(url, data=data, cookies=cookies)
+
+    return r.json, r.status_code
+
+
+def make_ubnt_request(method, url, data=None):
+    cookies = get_cookie_dict()
+    response_json, status_code = req(method, url, data=data, cookies=cookies)
+
+    if 'status' in response_json and response_json['status'] == 'success':
+        return response_json, status_code
     else:
-        return generate_new_cookie_and_login()
+        cookies = generate_new_cookie_and_login()
+        return req(method, url, data=data, cookies=cookies)
 
 
 def get_sensor_data():
-    cookies = get_cookie_dict()
-    r = requests.get('http://' + devices.device_ip_address + '/sensors', cookies=cookies)
-
-    response_json = r.json
-
-    #print "status: " + response_json['status']
+    response_json, status_code = make_ubnt_request("GET", 'http://' + devices.device_ip_address + '/sensors')
 
     return response_json['sensors']
 
@@ -84,16 +99,16 @@ def get_power_usage():
 @app.route('/sensors/<int:id>/<state>')
 def set_sensor_state(id, state):
     data = dict(output=state)
-    cookies = get_cookie_dict()
-    r = requests.put('http://' + devices.device_ip_address + '/sensors/' + str(id), data=data, cookies=cookies)
 
-    return "", r.status_code
+    response_json, status_code = make_ubnt_request("PUT", 'http://' + devices.device_ip_address + '/sensors/' + str(id), data=data)
+
+    return "", status_code
 
 
 @app.route('/')
-def hello_world():
+def index():
     return render_template('index.html', sensors=get_sensor_data())
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run()
