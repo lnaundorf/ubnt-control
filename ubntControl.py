@@ -14,7 +14,7 @@ cookie_timeout = timedelta(minutes=5)
 http_headers = {'Content-Type' : 'application/x-www-form-urlencoded'}
 
 app = Flask(__name__)
-#app.debug = True
+app.debug = True
 
 
 def generate_new_cookie_and_login():
@@ -61,7 +61,8 @@ def get_cookie_dict():
 def get_sensor_data():
     cookies = get_cookie_dict()
     r = requests.get('http://' + devices.device_ip_address + '/sensors', cookies=cookies)
-    response_json = r.json()
+
+    response_json = r.json
 
     #print "status: " + response_json['status']
 
