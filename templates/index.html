@@ -1,0 +1,45 @@
+<html xmlns="http://www.w3.org/1999/html">
+<head>
+    <title>mFi Control</title>
+    <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+    <h1>mFi Control</h1>
+
+    <div style="display: none">
+        JSON:<br/>
+        {{ sensors }}
+        <br/>
+    </div>
+
+    <ul>
+        {% for s in sensors %}
+            <li>{{ s.label }} (Port {{ s.port }})</li><br/>
+            <table>
+                <tr>
+                    <td>Status</td>
+                    <td>
+                        <span class="state-{% if s.state.output == 1 %}on{% else %}off{% endif %}" id="span_{{ s.port }}">{% if s.state.output == 1 %}An{% else %}Aus{% endif %}</span>
+                        <span id="state_{{ s.port }}" style="display: none">{{ s.state.output }}</span>
+                    </td>
+                <td>
+                    <input type="button" onclick="toggleState({{ s.port }})" value="{% if s.state.output == 1 %}Ausschalten{% else %}Anschalten{% endif %}" id="state_button_{{ s.port }}"/>
+                </td>
+                </tr>
+                <tr>
+                    <td>Verbrauch</td>
+                    <td>
+                        {{ s.state.power|round(2) }} W
+                    </td>
+                </tr>
+            </table>
+            <br/>
+        {% endfor %}
+    </ul>
+    <script type="text/javascript" src="/static/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="/static/js_lib.js"></script>
+    <script type="text/javascript">
+        //setInterval(fetchPowerUsage, 10000);
+    </script>
+</body>
+</html>
