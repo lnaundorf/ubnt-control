@@ -14,7 +14,9 @@ cookie_timeout = timedelta(hours=1)
 http_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 requests_timeout = 4  # timeout in seconds
 
-with open("settings.json") as settings_file:
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+with open(os.path.join(__location__, "settings.json")) as settings_file:
     settings = json.load(settings_file)
     login_username = settings["username"]
     login_password = settings["password"]
