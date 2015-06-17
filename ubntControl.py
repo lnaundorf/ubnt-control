@@ -84,7 +84,7 @@ def get_cookie_dict():
 
 
 def req(method, url, data=None, cookies=None):
-    app.logger.info("Make request. Method=%s, URL=%s, data=%s, cookies=%s", method, url, data, cookies)
+    app.logger.debug("Make request. Method=%s, URL=%s, data=%s, cookies=%s", method, url, data, cookies)
     r = None
     if method == "GET":
         r = requests.get(url, data=data, cookies=cookies, timeout=requests_timeout)
