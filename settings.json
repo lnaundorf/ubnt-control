@@ -1,0 +1,11 @@
+{
+  "username": "admin",
+  "password": "ananas3",
+  "devices" : [
+    {
+      "name": "Schlafzimmer",
+      "type" : "power_cord",
+      "ip_address": "192.168.0.10"
+    }
+  ]
+}

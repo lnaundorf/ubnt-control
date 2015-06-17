@@ -1,9 +1,9 @@
 .state-on {
     color: green;
-    font-weight: bold;
+    /*font-weight: bold;*/
 }
 
 .state-off {
     color: red;
-    font-weight: bold;
+    /*font-weight: bold;*/
 }

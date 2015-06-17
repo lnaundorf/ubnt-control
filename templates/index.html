@@ -1,48 +1,39 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>mFi Control</title>
-        <link rel="stylesheet" href="/static/style.css"/>
-        <link rel="stylesheet" href="/static/bootstrap.min.css"/>
-        <meta name="viewport" content="width=device-width">
-    </head>
-    <body>
-        <div style="margin: 20px">
-            <h1 align="center">mFi Control</h1>
+{% extends "base.html" %}
 
+{% block content %}
+    <h2 style="display: none">{{ device_name }}</h2>
+    <div style="display: none">
+        JSON:<br/>
+        {{ sensors }}
+        <br/>
+    </div>
+    {% for s in sensors %}
+        <h3>{% if s.label %}{{ s.label }}{% else %}Port {{ s.port }}{% endif %}</h3>
+        <table style="float: left">
+            <tr>
+                <td style="width: 100px">Status:</td>
+                <td style="width: 70px">
+                    <span class="state-{% if s.state.output == 1 %}on{% else %}off{% endif %}" id="span_{{ s.port }}">{% if s.state.output == 1 %}An{% else %}Aus{% endif %}</span>
+                    <span id="state_{{ s.port }}" style="display: none">{{ s.state.output }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>Verbrauch:</td>
+                <td>
+                    <span id="power_{{ s.port }}">{{ s.state.power|round(2) }}</span> W
+                </td>
+            </tr>
+        </table>
+        <button type="button" class="btn {% if s.state.output == 1 %}btn-danger{% else %}btn-success{% endif %}" onclick="toggleState({{ s.port }})" id="state_button_{{ s.port }}">{% if s.state.output == 1 %}Ausschalten{% else %}Anschalten{% endif %}</button>
+        <br/>
+    {% endfor %}
+{% endblock %}
 
-            <div style="display: none">
-                JSON:<br/>
-                {{ sensors }}
-                <br/>
-            </div>
-            {% for s in sensors %}
-                <h2>{% if s.label %}{{ s.label }}{% else %}Port {{ s.port }}{% endif %}</h2>
-                <table style="float: left">
-                    <tr>
-                        <td style="width: 100px">Status:</td>
-                        <td style="width: 70px">
-                            <span class="state-{% if s.state.output == 1 %}on{% else %}off{% endif %}" id="span_{{ s.port }}">{% if s.state.output == 1 %}An{% else %}Aus{% endif %}</span>
-                            <span id="state_{{ s.port }}" style="display: none">{{ s.state.output }}</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Verbrauch:</td>
-                        <td>
-                            <span id="power_{{ s.port }}">{{ s.state.power|round(2) }}</span> W
-                        </td>
-                    </tr>
-                </table>
-                <button type="button" class="btn {% if s.state.output == 1 %}btn-danger{% else %}btn-success{% endif %}" onclick="toggleState({{ s.port }})" id="state_button_{{ s.port }}">{% if s.state.output == 1 %}Ausschalten{% else %}Anschalten{% endif %}</button>
-                <br/>
-            {% endfor %}
-        </div>
-
-        <script type="text/javascript" src="/static/jquery-2.1.4.min.js"></script>
-        <script type="text/javascript" src="/static/js_lib.js"></script>
-        <script type="text/javascript">
-            // Update the current power usage every 10 seconds
-            setInterval(fetchPowerUsage, 10000);
-        </script>
-    </body>
-</html>
+{% block js %}
+    <script type="text/javascript" src="/static/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="/static/js_lib.js"></script>
+    <script type="text/javascript">
+        // Update the current power usage every 10 seconds
+        setInterval(fetchPowerUsage, 10000);
+    </script>
+{% endblock %}

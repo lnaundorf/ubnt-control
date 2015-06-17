@@ -1,17 +1,29 @@
 from flask import Flask, render_template
 import requests
-import devices
 from random import choice
 import string
 import os.path
 from datetime import datetime, timedelta
 import time
 import json
+import traceback
 
 cookie_length = 32
 cookie_id_filename = 'cookie.txt'
 cookie_timeout = timedelta(hours=1)
 http_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+requests_timeout = 4  # timeout in seconds
+
+with open("settings.json") as settings_file:
+    settings = json.load(settings_file)
+    login_username = settings["username"]
+    login_password = settings["password"]
+    d = settings["devices"][0]
+    device_name = d["name"]
+    device_type = d["type"]
+    device_ip_address = d["ip_address"]
+
+
 
 app = Flask(__name__)
 app.debug = True
@@ -28,8 +40,8 @@ def generate_new_cookie_and_login():
 
     #print "dict: " + str(cookie_dict)
 
-    login_string = 'username=' + devices.login_user + '&password=' + devices.login_password
-    r = requests.post('http://' + devices.device_ip_address + '/login.cgi', data=login_string, cookies=cookie_dict, headers=http_headers)
+    login_string = 'username=' + login_username + '&password=' + login_password
+    r = requests.post('http://' + device_ip_address + '/login.cgi', data=login_string, cookies=cookie_dict, headers=http_headers)
 
     return cookie_dict
 
@@ -58,17 +70,18 @@ def get_cookie_dict():
 def req(method, url, data=None, cookies=None):
     r = None
     if method == "GET":
-        r = requests.get(url, data=data, cookies=cookies)
+        r = requests.get(url, data=data, cookies=cookies, timeout=requests_timeout)
     elif method == "POST":
-        r = requests.post(url, data=data, cookies=cookies)
+        r = requests.post(url, data=data, cookies=cookies, timeout=requests_timeout)
     elif method == "PUT":
-        r = requests.put(url, data=data, cookies=cookies)
+        r = requests.put(url, data=data, cookies=cookies, timeout=requests_timeout)
 
     return r.json, r.status_code
 
 
 def make_ubnt_request(method, url, data=None):
     cookies = get_cookie_dict()
+
     response_json, status_code = req(method, url, data=data, cookies=cookies)
 
     if 'status' in response_json and response_json['status'] == 'success':
@@ -79,7 +92,7 @@ def make_ubnt_request(method, url, data=None):
 
 
 def get_sensor_data():
-    response_json, status_code = make_ubnt_request("GET", 'http://' + devices.device_ip_address + '/sensors')
+    response_json, status_code = make_ubnt_request("GET", 'http://' + device_ip_address + '/sensors')
 
     return response_json['sensors']
 
@@ -100,14 +113,20 @@ def get_power_usage():
 def set_sensor_state(id, state):
     data = dict(output=state)
 
-    response_json, status_code = make_ubnt_request("PUT", 'http://' + devices.device_ip_address + '/sensors/' + str(id), data=data)
+    response_json, status_code = make_ubnt_request("PUT", 'http://' + device_ip_address + '/sensors/' + str(id), data=data)
 
     return "", status_code
 
 
 @app.route('/')
 def index():
-    return render_template('index.html', sensors=get_sensor_data())
+    try:
+        data = get_sensor_data()
+    except Exception as e:
+        traceback.print_exc()
+        return render_template("error.html", error_message=e.message)
+
+    return render_template('index.html', sensors=data, device_name=device_name)
 
 
 if __name__ == '__main__':
