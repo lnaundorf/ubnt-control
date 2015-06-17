@@ -99,14 +99,17 @@ def req(method, url, data=None, cookies=None):
 def make_ubnt_request(method, url, data=None):
     cookies = get_cookie_dict()
 
-    response_json, status_code = req(method, url, data=data, cookies=cookies)
+    try:
+        response_json, status_code = req(method, url, data=data, cookies=cookies)
 
-    if 'status' in response_json and response_json['status'] == 'success':
-        return response_json, status_code
-    else:
-        app.logger.warning("request was unsuccessful: %s. Requesting new cookie.", url)
-        cookies = generate_new_cookie_and_login()
-        return req(method, url, data=data, cookies=cookies)
+        if 'status' in response_json and response_json['status'] == 'success':
+            return response_json, status_code
+    except requests.TooManyRedirects:
+        app.logger.warning("Too many redirects. Cookie may be outdated.")
+
+    app.logger.warning("request was unsuccessful: %s. Requesting new cookie.", url)
+    cookies = generate_new_cookie_and_login()
+    return req(method, url, data=data, cookies=cookies)
 
 
 def get_sensor_data():
