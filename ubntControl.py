@@ -7,12 +7,18 @@ from datetime import datetime, timedelta
 import time
 import json
 import traceback
+import logging
+from logging.handlers import RotatingFileHandler
+from logging import Formatter
+
 
 cookie_length = 32
 cookie_id_filename = 'cookie.txt'
 cookie_timeout = timedelta(hours=1)
 http_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 requests_timeout = 4  # timeout in seconds
+logfile_location = '/var/log/mFi.log'
+
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -26,9 +32,14 @@ with open(os.path.join(__location__, "settings.json")) as settings_file:
     device_ip_address = d["ip_address"]
 
 
-
 app = Flask(__name__)
 app.debug = True
+
+# Setup logging
+handler = RotatingFileHandler(logfile_location, maxBytes=10000, backupCount=2)
+handler.setLevel(logging.INFO)
+handler.setFormatter(Formatter('%(asctime)s %(levelname)s: %(message)s'))
+app.logger.addHandler(handler)
 
 
 def generate_new_cookie_and_login():
@@ -38,6 +49,7 @@ def generate_new_cookie_and_login():
     f.write(cookie_id + ' ' + str(int(time.mktime(datetime.now().timetuple()))))
     f.close()
 
+    app.logger.info("New cookie generated. ID = %s", cookie_id)
     cookie_dict = dict(AIROS_SESSIONID=cookie_id)
 
     #print "dict: " + str(cookie_dict)
@@ -70,6 +82,7 @@ def get_cookie_dict():
 
 
 def req(method, url, data=None, cookies=None):
+    app.logger.info("Make request. Method=%s, URL=%s, data=%s, cookies=%s", method, url, data, cookies)
     r = None
     if method == "GET":
         r = requests.get(url, data=data, cookies=cookies, timeout=requests_timeout)
@@ -89,6 +102,7 @@ def make_ubnt_request(method, url, data=None):
     if 'status' in response_json and response_json['status'] == 'success':
         return response_json, status_code
     else:
+        app.logger.warning("request was unsuccessful: %s. Requesting new cookie.", url)
         cookies = generate_new_cookie_and_login()
         return req(method, url, data=data, cookies=cookies)
 
@@ -125,7 +139,7 @@ def index():
     try:
         data = get_sensor_data()
     except Exception as e:
-        traceback.print_exc()
+        app.logger.error("Exception: %s", traceback.format_exc())
         return render_template("error.html", error_message=e.message)
 
     return render_template('index.html', sensors=data, device_name=device_name)
