@@ -14,7 +14,7 @@ from logging import Formatter
 
 cookie_length = 32
 cookie_id_filename = 'cookie.txt'
-cookie_timeout = timedelta(hours=1)
+cookie_timeout = timedelta(minutes=30)
 http_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 requests_timeout = 4  # timeout in seconds
 logfile_location = '/var/log/mFi.log'
@@ -36,7 +36,7 @@ app = Flask(__name__)
 app.debug = True
 
 # Setup logging
-handler = RotatingFileHandler(logfile_location, maxBytes=10000, backupCount=2)
+handler = RotatingFileHandler(logfile_location, maxBytes=1000000, backupCount=2)
 handler.setLevel(logging.INFO)
 handler.setFormatter(Formatter('%(asctime)s %(levelname)s: %(message)s'))
 app.logger.addHandler(handler)
@@ -76,8 +76,10 @@ def get_cookie_dict():
             #print "timedelta: " + str(timedelta)
             if delta <= cookie_timeout:
                 # the cookie is not too old
+                #app.logger.info("Cookie age is ok")
                 return dict(AIROS_SESSIONID=cookie_id)
 
+    app.logger.info("generate new cookie")
     return generate_new_cookie_and_login()
 
 
@@ -140,7 +142,7 @@ def index():
         data = get_sensor_data()
     except Exception as e:
         app.logger.error("Exception: %s", traceback.format_exc())
-        return render_template("error.html", error_message=e.message)
+        return render_template("error.html", error_message=e.message, stack_trace=traceback.format_exc())
 
     return render_template('index.html', sensors=data, device_name=device_name)
 
