@@ -10,6 +10,7 @@ import traceback
 import logging
 from logging.handlers import RotatingFileHandler
 from logging import Formatter
+import ServerManager
 
 
 cookie_length = 32
@@ -19,6 +20,8 @@ http_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 requests_timeout = 4  # timeout in seconds
 logfile_location = '/var/log/mFi.log'
 
+devices = dict()
+
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -26,10 +29,13 @@ with open(os.path.join(__location__, "settings.json")) as settings_file:
     settings = json.load(settings_file)
     login_username = settings["username"]
     login_password = settings["password"]
-    d = settings["devices"][0]
-    device_name = d["name"]
-    device_type = d["type"]
-    device_ip_address = d["ip_address"]
+
+    for d in settings["devices"]:
+        if d["name"]:
+            devices[d["name"]] = d
+
+    print "devices read from settings file:"
+    print str(devices)
 
 
 app = Flask(__name__)
@@ -55,7 +61,10 @@ def generate_new_cookie_and_login():
     #print "dict: " + str(cookie_dict)
 
     login_string = 'username=' + login_username + '&password=' + login_password
-    r = requests.post('http://' + device_ip_address + '/login.cgi', data=login_string, cookies=cookie_dict, headers=http_headers)
+
+    for dev in devices.itervalues():
+        if dev["type"] == "power_cord":
+            r = requests.post('http://' + dev["ip_address"] + '/login.cgi', data=login_string, cookies=cookie_dict, headers=http_headers)
 
     return cookie_dict
 
@@ -113,28 +122,49 @@ def make_ubnt_request(method, url, data=None):
 
 
 def get_sensor_data():
-    response_json, status_code = make_ubnt_request("GET", 'http://' + device_ip_address + '/sensors')
+    res = list()
 
-    return response_json['sensors']
+    for dev in devices.itervalues():
+        dev_data = dict()
+        dev_data["name"] = dev["name"]
+        dev_data["type"] = dev["type"]
+
+        if dev["type"] == "power_cord":
+            response_json, status_code = make_ubnt_request("GET", 'http://' + dev["ip_address"] + '/sensors')
+
+            dev_data["data"] = response_json['sensors']
+        elif dev["type"] == "server":
+            dev_data["data"] = {'output': ServerManager.server_is_up(dev["ip_address"])}
+
+        res.append(dev_data)
+
+    return res
 
 
 @app.route('/sensors/power')
 def get_power_usage():
-    response_json = get_sensor_data()
-
-    res_list = list()
-
-    for s in response_json:
-        res_list.append(dict(port_id=s['port'], power=round(s['state']['power'], 2)))
-
-    return json.dumps(res_list)
+    return json.dumps(get_sensor_data())
 
 
-@app.route('/sensors/<int:id>/<state>')
-def set_sensor_state(id, state):
+@app.route('/<name>/sensors/<int:id>/<int:state>')
+def set_sensor_state(name, id, state):
     data = dict(output=state)
 
-    response_json, status_code = make_ubnt_request("PUT", 'http://' + device_ip_address + '/sensors/' + str(id), data=data)
+    dev = devices.get(name, None)
+
+    if dev is not None:
+        if dev["type"] == "power_cord":
+            response_json, status_code = make_ubnt_request("PUT", 'http://' + dev["ip_address"] + '/sensors/' + str(id), data=data)
+        elif dev["type"] == "server":
+            status_code = 200
+            if state == 1:
+                # start server via wake on lan
+                ServerManager.wake_on_lan(dev['mac_address'])
+            elif state == 0:
+                # shutdown server via ssh
+                print "shutdown"
+                ServerManager.shutdown(dev['ip_address'], dev['ssh_username'], dev['ssh_password'])
+
 
     return "", status_code
 
@@ -142,12 +172,12 @@ def set_sensor_state(id, state):
 @app.route('/')
 def index():
     try:
-        data = get_sensor_data()
+        devices = get_sensor_data()
     except Exception as e:
         app.logger.error("Exception: %s", traceback.format_exc())
         return render_template("error.html", error_message=e.message, stack_trace=traceback.format_exc())
 
-    return render_template('index.html', sensors=data, device_name=device_name)
+    return render_template('index.html', devices=devices)
 
 
 if __name__ == '__main__':

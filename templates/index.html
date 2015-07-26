@@ -1,31 +1,25 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2 style="display: none">{{ device_name }}</h2>
+    <h1 style="display: none">{{ device_name }}</h1>
     <div style="display: none">
         JSON:<br/>
-        {{ sensors }}
+        {{ devices }}
         <br/>
     </div>
-    {% for s in sensors %}
-        <h3>{% if s.label %}{{ s.label }}{% else %}Port {{ s.port }}{% endif %}</h3>
-        <table style="float: left">
-            <tr>
-                <td style="width: 100px">Status:</td>
-                <td style="width: 70px">
-                    <span class="state-{% if s.state.output == 1 %}on{% else %}off{% endif %}" id="span_{{ s.port }}">{% if s.state.output == 1 %}An{% else %}Aus{% endif %}</span>
-                    <span id="state_{{ s.port }}" style="display: none">{{ s.state.output }}</span>
-                </td>
-            </tr>
-            <tr>
-                <td>Verbrauch:</td>
-                <td>
-                    <span id="power_{{ s.port }}">{{ s.state.power|round(2) }}</span> W
-                </td>
-            </tr>
-        </table>
-        <button type="button" class="btn {% if s.state.output == 1 %}btn-danger{% else %}btn-success{% endif %}" onclick="toggleState({{ s.port }})" id="state_button_{{ s.port }}">{% if s.state.output == 1 %}Ausschalten{% else %}Anschalten{% endif %}</button>
-        <br/>
+    {% for dev in devices %}
+        <h2>{{ dev.name }}</h2>
+        {% if dev.type == "power_cord" %}
+            {% for s in dev.data %}
+                {% with dev_name=dev.name, output_state=s.state.output, label=s.label, port=s.port, power=s.state.power, type=dev.type, column1width=90, column2width=80 %}
+                    {% include "sensor_row.html" %}
+                {% endwith %}
+            {% endfor %}
+        {% elif dev.type == "server" %}
+            {% with dev_name=dev.name, output_state=dev.data.output, power=-1, port=0, type=dev.type, column1width=60, column2width=110 %}
+                {% include "sensor_row.html" %}
+            {% endwith %}
+        {% endif %}
     {% endfor %}
 {% endblock %}
 
@@ -33,7 +27,7 @@
     <script type="text/javascript" src="/static/jquery-2.1.4.min.js"></script>
     <script type="text/javascript" src="/static/js_lib.js"></script>
     <script type="text/javascript">
-        // Update the current power usage every 10 seconds
-        setInterval(fetchPowerUsage, 10000);
+        // Update the current power usage every 5 seconds
+        setInterval(fetchPowerUsage, 5000);
     </script>
 {% endblock %}

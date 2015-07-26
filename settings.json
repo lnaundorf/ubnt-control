@@ -5,7 +5,15 @@
     {
       "name": "Schlafzimmer",
       "type" : "power_cord",
-      "ip_address": "192.168.0.10"
+      "ip_address": "192.168.0.100"
+    },
+    {
+      "name": "Nas",
+      "type": "server",
+      "ip_address": "192.168.0.70",
+      "mac_address": "d0:bf:9c:45:ab:04",
+      "ssh_username": "remote",
+      "ssh_password": "ananas3"
     }
   ]
 }

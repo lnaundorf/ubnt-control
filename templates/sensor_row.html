@@ -1,0 +1,22 @@
+{% if label or port %}
+    <h3>{% if label %}{{ label }}{% else %}Port {{ port }}{% endif %}</h3>
+{% endif %}
+<table style="float: left">
+    <tr>
+        <td style="width: {{ column1width }}px">Status:</td>
+        <td style="width: {{ column2width }}px">
+            <span class="state-{% if output_state == 1 %}on{% else %}off{% endif %}" id="span_{{ dev_name }}_{{ port }}">{% if output_state == 1 %}An{% else %}Aus{% endif %}</span>
+            <span id="state_{{ dev_name }}_{{ port }}" style="display: none">{{ output_state }}</span>
+        </td>
+    </tr>
+    {% if power >= 0 %}
+        <tr>
+            <td>Verbrauch:</td>
+            <td>
+                <span id="{{ dev_name }}_power_{{ port }}">{{ power|round(1) }}</span> W
+            </td>
+        </tr>
+    {% endif %}
+</table>
+<button type="button" class="btn {% if output_state == 1 %}btn-danger{% else %}btn-success{% endif %}" onclick="toggleState('{{ type }}', '{{ dev_name }}', {% if port %}{{ port }}{% else %}0{% endif %})" id="state_button_{{ dev_name }}_{{ port }}">{% if output_state == 1 %}Ausschalten{% else %}Anschalten{% endif %}</button>
+<br/>
