@@ -45,7 +45,7 @@ def shutdown(host, username, password):
 
     # in order for the following command to work, the user needs to have an entry in /etc/sudoers of the following form
     # remote ALL = (root) NOPASSWD: /sbin/shutdown
-    stdin, stdout, stderr = client.exec_command('sudo shutdown -h now')
+    stdin, stdout, stderr = client.exec_command('sudo shutdown -p now')
     print "stdin: " + str(stdin)
     print "stdout: " + str(stdout)
     print "stderr: " + str(stderr)
