@@ -102,7 +102,7 @@ def req(method, url, data=None, cookies=None):
     elif method == "PUT":
         r = requests.put(url, data=data, cookies=cookies, timeout=requests_timeout)
 
-    return r.json, r.status_code
+    return r.json(), r.status_code
 
 
 def make_ubnt_request(method, url, data=None):
@@ -131,7 +131,6 @@ def get_sensor_data():
 
         if dev["type"] == "power_cord":
             response_json, status_code = make_ubnt_request("GET", 'http://' + dev["ip_address"] + '/sensors')
-
             dev_data["data"] = response_json['sensors']
         elif dev["type"] == "server":
             dev_data["data"] = {'output': ServerManager.server_is_up(dev["ip_address"])}

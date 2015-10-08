@@ -11,7 +11,7 @@
         <h2>{{ dev.name }}</h2>
         {% if dev.type == "power_cord" %}
             {% for s in dev.data %}
-                {% with dev_name=dev.name, output_state=s.state.output, label=s.label, port=s.port, power=s.state.power, type=dev.type, column1width=90, column2width=80 %}
+                {% with dev_name=dev.name, output_state=s.output, label=s.label, port=s.port, power=s.power, type=dev.type, column1width=90, column2width=80 %}
                     {% include "sensor_row.html" %}
                 {% endwith %}
             {% endfor %}
