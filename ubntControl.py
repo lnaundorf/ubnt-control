@@ -142,7 +142,7 @@ def get_sensor_data():
         dev_data["type"] = dev["type"]
 
         if dev["type"] == "power_cord":
-            dev_data["data"] = get_power_coord_data(dev["ip_address"], full_data=True)
+            dev_data["data"] = get_power_coord_data(dev["ip_address"])
         elif dev["type"] == "server":
             dev_data["data"] = {'output': ServerManager.server_is_up(dev["ip_address"])}
 
