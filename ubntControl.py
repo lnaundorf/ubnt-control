@@ -121,6 +121,18 @@ def make_ubnt_request(method, url, data=None):
     return req(method, url, data=data, cookies=cookies)
 
 
+def get_power_coord_data(ip_address, only_port_id=None):
+    response_json, status_code = make_ubnt_request("GET", 'http://' + ip_address + '/sensors')
+
+    if not only_port_id:
+        return response_json['sensors']
+    else:
+        for sensor in response_json['sensors']:
+            if sensor['port'] == only_port_id:
+                return sensor['output']
+        return ""
+
+
 def get_sensor_data():
     res = list()
 
@@ -130,8 +142,7 @@ def get_sensor_data():
         dev_data["type"] = dev["type"]
 
         if dev["type"] == "power_cord":
-            response_json, status_code = make_ubnt_request("GET", 'http://' + dev["ip_address"] + '/sensors')
-            dev_data["data"] = response_json['sensors']
+            dev_data["data"] = get_power_coord_data(dev["ip_address"], full_data=True)
         elif dev["type"] == "server":
             dev_data["data"] = {'output': ServerManager.server_is_up(dev["ip_address"])}
 
@@ -143,6 +154,16 @@ def get_sensor_data():
 @app.route('/sensors/power')
 def get_power_usage():
     return json.dumps(get_sensor_data())
+
+
+@app.route('/<name>/sensors/<int:id>/')
+def get_single_sensor_state(name, id, state):
+    dev = devices.get(name, None)
+
+    if dev is not None:
+        return get_power_coord_data(dev["ip_address"], only_port_id=id)
+    else:
+        return ""
 
 
 @app.route('/<name>/sensors/<int:id>/<int:state>')
