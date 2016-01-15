@@ -157,7 +157,7 @@ def get_power_usage():
 
 
 @app.route('/<name>/sensors/<int:id>/')
-def get_single_sensor_state(name, id, state):
+def get_single_sensor_state(name, id):
     dev = devices.get(name, None)
 
     if dev is not None:
